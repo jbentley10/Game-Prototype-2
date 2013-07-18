@@ -18,13 +18,11 @@
         
         <script id='my-vertex-shader' type='x-shader/x-vertex'>
             varying vec3 vNormal;
-            varying vec2 vUv;
             uniform float uTime;
             uniform float uBeatTime;
             uniform float uBeat;
             
             void main() {
-                vUv = vec2(uv.x - 0.5, uv.y - 0.5); // center vUv
                 vNormal = normalMatrix * vec3(normal);
                 gl_Position = projectionMatrix *
                 modelViewMatrix *
@@ -33,27 +31,45 @@
             </script>
         
         <script id='my-fragment-shader' type='x-shader/x-fragment'>
-            #define CURVE (20.0)
-            #define SPEED (6.0)
-            #define DENSITY (2.0)
-            
             varying vec3 vNormal;
             uniform float uTime;
             uniform float uBeatTime;
             uniform float uBeat;
-            varying vec2 vUv;
             
             void main() {
-                vec3 light = vec3(1.0, 1.0, 1.0);
+                vec3 light = vec3(1.0, 2.0, 1.0);
                 light = normalize(light);
                 vec3 nvNormal = normalize(vNormal);
                 float prod = max(0.0, dot(nvNormal, light));
                 float tval = abs(cos(uBeatTime * 3.14159));
+                gl_FragColor = vec4(tval, prod, 1, 1);
+            }
+            </script>
+        
+        <script id='trippy-vertex-shader' type='x-shader/x-vertex'>
+            varying vec2 vUv;
+            
+            void main() {
+                vUv = vec2(uv.x - 0.5, uv.y - 0.5); // center vUv
+                gl_Position = projectionMatrix *
+                modelViewMatrix *
+                vec4(position, 1.0);
+            }
+            </script>
+        
+        <script id='trippy-fragment-shader' type='x-shader/x-fragment'>
+            #define CURVE (20.0)
+            #define SPEED (6.0)
+            #define DENSITY (2.0)
+            
+            uniform float uTime;
+            varying vec2 vUv;
+            
+            void main() {
                 float ang = atan(vUv.y, vUv.x);
                 float dist = length(vUv) * CURVE;
                 float t = ang * DENSITY + uTime * SPEED;
-                gl_FragColor = vec4(tval, prod, 1.0, 1.0);
-                //gl_FragColor = vec4(abs(sin(t + dist)), 0.0, 1.0, 1.0);
+                gl_FragColor = vec4(abs(sin(t + dist)), 0.0, 1.0, 1.0);
             }
             </script>
         
@@ -120,6 +136,8 @@
                 
                 var vertexShaderText = $('#my-vertex-shader').text();
                 var fragmentShaderText = $('#my-fragment-shader').text();
+                var trippyVertexShaderText = $('#trippy-vertex-shader').text();
+                var trippyFragmentShaderText = $('#trippy-fragment-shader').text();
                 
                 this.speakerMaterial = new THREE.ShaderMaterial({
                                                            uniforms: {
@@ -149,8 +167,8 @@
                                                            uniforms: {
                                                            'uTime': { type: 'f', value: 0.0 },
                                                            },
-                                                           vertexShader: vertexShaderText,
-                                                           fragmentShader: fragmentShaderText
+                                                           vertexShader: trippyVertexShaderText,
+                                                           fragmentShader: trippyFragmentShaderText
                                                            });
                 this.poster = new THREE.Mesh(
                                              new THREE.PlaneGeometry(600, 600),
