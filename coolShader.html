@@ -92,6 +92,22 @@
             }
             </script>
         
+        <script id='blur-postprocess-fragment-shader' type='x-shader/x-fragment'>
+            varying vec2 vUv;
+            uniform sampler2D tDiffuse; // input texture
+            
+            void main() {
+                float dx = 1.0 / 800.0 * 3.0;
+                float dy = 1.0 / 600.0 * 3.0;
+                vec4 color0 = texture2D( tDiffuse, vec2(vUv.x, vUv.y) );
+                vec4 color1 = texture2D( tDiffuse, vec2(vUv.x - dx, vUv.y) );
+                vec4 color2 = texture2D( tDiffuse, vec2(vUv.x + dx, vUv.y) );
+                vec4 color3 = texture2D( tDiffuse, vec2(vUv.x, vUv.y - dy) );
+                vec4 color4 = texture2D( tDiffuse, vec2(vUv.x, vUv.y + dy) );
+                gl_FragColor = (color0 + color1 + color2 + color3 + color4) * 0.2;
+            }
+            </script>
+        
         <script>
             
             /**
@@ -138,6 +154,7 @@
                 var fragmentShaderText = $('#my-fragment-shader').text();
                 var trippyVertexShaderText = $('#trippy-vertex-shader').text();
                 var trippyFragmentShaderText = $('#trippy-fragment-shader').text();
+                var blurFragmentShaderText = $('#blur-postprocess-fragment-shader').text();
                 
                 this.speakerMaterial = new THREE.ShaderMaterial({
                                                            uniforms: {
@@ -177,6 +194,29 @@
                 this.poster.position.z = -100;
                 this.scene.add(this.poster);
                 
+                this.sphereMaterial = new THREE.ShaderMaterial({
+                                                               uniforms: {
+                                                               'uTime': { type: 'f', value: 0.0 },
+                                                               'uBeatTime': { type: 'f', value: 0.0 },
+                                                               'uBeat': { type: 'f', value: 0.0 }
+                                                               },
+                                                               vertexShader: vertexShaderText,
+                                                               fragmentShader: blurFragmentShaderText
+                                                               });
+                
+                this.sphere1 = new THREE.Mesh(
+                                           new THREE.SphereGeometry(100, 6, 6),
+                                           this.speakerMaterial);
+                this.sphere1.position.x = 300;
+                this.sphere1.position.y = 400;
+                this.sphere2 = new THREE.Mesh(
+                                            new THREE.SphereGeometry(100, 6, 6),
+                                            this.speakerMaterial);
+                this.sphere2.position.x = -300;
+                this.sphere2.position.y = 400;
+                this.scene.add(this.sphere1);
+                this.scene.add(this.sphere2);
+                
                 this.renderer = new THREE.WebGLRenderer({antialias: true});
                 this.renderer.setSize(800, 600);
                 this.renderer.setClearColor(0xeeeeee, 1.0);
@@ -189,6 +229,7 @@
                     uniforms: { 'tDiffuse': { type: 't', value: null }},
                     vertexShader: $('#my-postprocess-vertex-shader').text(),
                     fragmentShader: $('#my-postprocess-fragment-shader').text()
+                    //blurFragmentShader: $('blur-postprocess-fragment-shader').text();
                 };
                 var effect = new THREE.ShaderPass(MyEffectShader);
                 effect.renderToScreen = true;
@@ -203,8 +244,10 @@
                 this.speakerMaterial.uniforms['uBeatTime'].value = this.beat.toBeatTime(t);
                 this.speakerMaterial.uniforms['uBeat'].value = this.beat.toBeat(t);
                 this.posterMaterial.uniforms['uTime'].value = t;
-                //this.cube.rotation.x += 0.01;
-                //this.cube.rotation.y += 0.007;
+                this.sphere1.rotation.x += 0.01;
+                this.sphere1.rotation.y += 0.007;
+                this.sphere2.rotation.x += 0.01;
+                this.sphere2.rotation.y += 0.007;
                 this.camera.lookAt(this.scene.position);
                 this.composer.render();
             };
