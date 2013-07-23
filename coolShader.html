@@ -168,45 +168,53 @@
                 this.songName = 0;
                 this.beat = new Beat(145);
                 
-                // Add some text to display score
+                /* 
+                 * Add text that updates 
+                 */
+                
+                // Display score
                 this.text2 = document.createElement('div');
                 this.text2.style.position = 'absolute';
                 this.text2.style.width = 400;
                 this.text2.style.height = 400;
                 this.text2.style.backgroundColor = "white";
-                this.text2.style.top = 400 + 'px';
+                this.text2.style.top = 380 + 'px';
                 this.text2.style.left = 375 + 'px';
                 document.body.appendChild(this.text2);
                 
-                // Add some text to display the song name
+                // Display the song name
                 this.text3 = document.createElement('div');
                 this.text3.style.position = 'absolute';
                 this.text3.style.width = 400;
                 this.text3.style.height = 400;
                 this.text3.style.backgroundColor = "white";
-                this.text3.style.top = 350 + 'px';
+                this.text3.style.top = 335 + 'px';
                 this.text3.style.left = 375 + 'px';
                 document.body.appendChild(this.text3);
                 
-                // Add some text to display the combo count
+                // Display the combo count
                 this.text4 = document.createElement('div');
                 this.text4.style.position = 'absolute';
                 this.text4.style.width = 400;
                 this.text4.style.height = 400;
                 this.text4.style.backgroundColor = "white";
-                this.text4.style.top = 450 + 'px';
+                this.text4.style.top = 430 + 'px';
                 this.text4.style.left = 375 + 'px';
                 document.body.appendChild(this.text4);
                 
                 this.camera = new THREE.PerspectiveCamera(75, 4.0/3.0, 1, 10000);
-                this.camera.position.y = -400;
-                this.camera.position.z = 500;
+                this.camera.position.y = -275;
+                this.camera.position.z = 600;
                 
                 var vertexShaderText = $('#my-vertex-shader').text();
                 var fragmentShaderText = $('#my-fragment-shader').text();
                 var trippyVertexShaderText = $('#trippy-vertex-shader').text();
                 var trippyFragmentShaderText = $('#trippy-fragment-shader').text();
                 var blurFragmentShaderText = $('#blur-postprocess-fragment-shader').text();
+                
+                /* 
+                 * Add the Three.js objects seen in the game 
+                 */
                 
                 // Initialize the material used for the speakers
                 this.speakerMaterial = new THREE.ShaderMaterial({
@@ -294,6 +302,8 @@
                 jsonLoader.load('figure.js', function(geometry) {
                                 that.figure = new THREE.Mesh(geometry, that.myMaterial);
                                 that.figure.scale.set(40, 40, 40);
+                                that.figure.position.x = 0;
+                                that.figure.position.y = -450;
                                 that.scene.add(that.figure);
                                 });
                 
@@ -304,15 +314,15 @@
                 this.scene.add(this.skyBox);
                 this.scene.fog = new THREE.FogExp2( 0x9999ff, 0.00025 );
                 
-                // Add the model to the scene
-                this.scene.add(this.dae);
-                
+                // Render the image
                 this.renderer = new THREE.WebGLRenderer({antialias: true});
                 this.renderer.setSize(800, 600);
                 this.renderer.setClearColor(0xeeeeee, 1.0);
                 document.body.appendChild(this.renderer.domElement);
                 
-                /*  Setup keyboard events  */
+                /* 
+                 * Setup keyboard events  
+                 */
                 
                 this.keys = {};
                 $('body').keydown(function(e) {
@@ -340,7 +350,6 @@
                     uniforms: { 'tDiffuse': { type: 't', value: null }},
                     vertexShader: $('#my-postprocess-vertex-shader').text(),
                     fragmentShader: $('#my-postprocess-fragment-shader').text()
-                    //blurFragmentShader: $('blur-postprocess-fragment-shader').text();
                 };
                 var effect = new THREE.ShaderPass(MyEffectShader);
                 effect.renderToScreen = true;
@@ -368,7 +377,9 @@
             
             Game.prototype.handleInput = function() {
                 
-                /* Song selection buttons */
+                /* 
+                 * Song selection buttons 
+                 */
                 
                 if (this.keys[49]){
                     // "The Modern Age" by the Strokes
@@ -421,7 +432,9 @@
                     this.text2.innerHTML = "Score = " + this.score;
                     this.text4.innerHTML = "Combo = " + this.combo;
                     
-                    /* Score threshold*/
+                    /**
+                     * Score threshold
+                     */
                     
                     // Marvelous!
                     if (pulse >= 0.951 && pulse <= 0.9999999){
