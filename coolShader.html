@@ -14,8 +14,23 @@
     </head>
     <body>
         
-        <p>Javascript game using shaders. </p>
+        <p>Welcome to Thumper! </p>
+        <p>Press a number to pick a song: </p>
+        <p>1 - "The Modern Age" by the Strokes </p>
+        <p>2 - "Helicopter" by Bloc Party </p>
+        <p>3 - "Start Me Up" by the Rolling Stones </p>
+        <p>4 - "Take Me Out" by Franz Ferdinand </p>
+        <p>5 - "I Bet You Look Good on the Dancefloor" by Arctic Monkeys </p>
+        <p> Chain together multiple hits to activate the combo multiplier! </p>
+        <p> Press escape at any time to stop the song </p>
         
+        <audio id='song1' src="sounds/themodernage.mp3"></audio>
+        <audio id='song2' src="sounds/helicopter.mp3"></audio>
+        <audio id='song3' src="sounds/startmeup.mp3"></audio>
+        <audio id='song4' src="sounds/takemeout.mp3"></audio>
+        <audio id='song5' src="sounds/ibylgotd.mp3"></audio>
+        
+        <!-----------All shader code goes here--------------->
         <script id='my-vertex-shader' type='x-shader/x-vertex'>
             varying vec3 vNormal;
             uniform float uTime;
@@ -60,7 +75,7 @@
         <script id='trippy-fragment-shader' type='x-shader/x-fragment'>
             #define CURVE (20.0)
             #define SPEED (6.0)
-            #define DENSITY (2.0)
+            #define DENSITY (7.0)
             
             uniform float uTime;
             varying vec2 vUv;
@@ -107,7 +122,6 @@
                 gl_FragColor = (color0 + color1 + color2 + color3 + color4) * 0.2;
             }
             </script>
-        
         <script>
             
             /**
@@ -122,7 +136,9 @@
              * Convert time to beatTime
              */
             Beat.prototype.toBeatTime = function(t) {
-                return t * this.bpm / 60.0;
+                var pulse;
+                return pulse = t * this.bpm / 60.0;
+                console.log(pulse);
             };
             
             /**
@@ -140,14 +156,50 @@
             var Game = function() {
             };
             
+            
             /**
              * Initialize game state
              */
             Game.prototype.init = function() {
-                this.beat = new Beat(120.0);
+                var that = this;
+                this.song = 0;
+                this.score = 0;
+                this.combo = 0;
+                this.songName = 0;
+                this.beat = new Beat(145);
+                
+                // Add some text to display score
+                this.text2 = document.createElement('div');
+                this.text2.style.position = 'absolute';
+                this.text2.style.width = 400;
+                this.text2.style.height = 400;
+                this.text2.style.backgroundColor = "white";
+                this.text2.style.top = 400 + 'px';
+                this.text2.style.left = 375 + 'px';
+                document.body.appendChild(this.text2);
+                
+                // Add some text to display the song name
+                this.text3 = document.createElement('div');
+                this.text3.style.position = 'absolute';
+                this.text3.style.width = 400;
+                this.text3.style.height = 400;
+                this.text3.style.backgroundColor = "white";
+                this.text3.style.top = 350 + 'px';
+                this.text3.style.left = 375 + 'px';
+                document.body.appendChild(this.text3);
+                
+                // Add some text to display the combo count
+                this.text4 = document.createElement('div');
+                this.text4.style.position = 'absolute';
+                this.text4.style.width = 400;
+                this.text4.style.height = 400;
+                this.text4.style.backgroundColor = "white";
+                this.text4.style.top = 450 + 'px';
+                this.text4.style.left = 375 + 'px';
+                document.body.appendChild(this.text4);
                 
                 this.camera = new THREE.PerspectiveCamera(75, 4.0/3.0, 1, 10000);
-                this.camera.position.y = -200;
+                this.camera.position.y = -400;
                 this.camera.position.z = 500;
                 
                 var vertexShaderText = $('#my-vertex-shader').text();
@@ -156,6 +208,7 @@
                 var trippyFragmentShaderText = $('#trippy-fragment-shader').text();
                 var blurFragmentShaderText = $('#blur-postprocess-fragment-shader').text();
                 
+                // Initialize the material used for the speakers
                 this.speakerMaterial = new THREE.ShaderMaterial({
                                                            uniforms: {
                                                            'uTime': { type: 'f', value: 0.0 },
@@ -170,14 +223,14 @@
                                            new THREE.CubeGeometry(100, 200, 100),
                                            this.speakerMaterial);
                 this.speaker1.position.x = -300;
-                this.speaker1.position.y = -100;
+                this.speaker1.position.y = -300;
                 this.scene.add(this.speaker1);
                 
                 this.speaker2 = new THREE.Mesh(
                                                new THREE.CubeGeometry(100, 200, 100),
                                                this.speakerMaterial);
                 this.speaker2.position.x = 300;
-                this.speaker2.position.y = -100;
+                this.speaker2.position.y = -300;
                 this.scene.add(this.speaker2);
                 
                 this.posterMaterial = new THREE.ShaderMaterial({
@@ -190,7 +243,7 @@
                 this.poster = new THREE.Mesh(
                                              new THREE.PlaneGeometry(600, 600),
                                              this.posterMaterial);
-                this.poster.position.y = 110;
+                this.poster.position.y = -110;
                 this.poster.position.z = -100;
                 this.scene.add(this.poster);
                 
@@ -207,20 +260,78 @@
                 this.sphere1 = new THREE.Mesh(
                                            new THREE.SphereGeometry(100, 6, 6),
                                            this.speakerMaterial);
-                this.sphere1.position.x = 300;
-                this.sphere1.position.y = 400;
+                this.sphere1.position.x = 400;
+                this.sphere1.position.y = 250;
                 this.sphere2 = new THREE.Mesh(
                                             new THREE.SphereGeometry(100, 6, 6),
                                             this.speakerMaterial);
-                this.sphere2.position.x = -300;
-                this.sphere2.position.y = 400;
+                this.sphere2.position.x = 200;
+                this.sphere2.position.y = 250;
+                this.sphere3 = new THREE.Mesh(
+                                              new THREE.SphereGeometry(100, 6, 6),
+                                              this.speakerMaterial);
+                this.sphere3.position.x = 0;
+                this.sphere3.position.y = 250;
+                this.sphere4 = new THREE.Mesh(
+                                              new THREE.SphereGeometry(100, 6, 6),
+                                              this.speakerMaterial);
+                this.sphere4.position.x = -200;
+                this.sphere4.position.y = 250;
+                this.sphere5 = new THREE.Mesh(
+                                              new THREE.SphereGeometry(100, 6, 6),
+                                              this.speakerMaterial);
+                this.sphere5.position.x = -400;
+                this.sphere5.position.y = 250;
                 this.scene.add(this.sphere1);
                 this.scene.add(this.sphere2);
+                this.scene.add(this.sphere3);
+                this.scene.add(this.sphere4);
+                this.scene.add(this.sphere5);
+                
+                // Add the model human figure
+                this.figure = null;
+                var jsonLoader = new THREE.JSONLoader();
+                jsonLoader.load('figure.js', function(geometry) {
+                                that.figure = new THREE.Mesh(geometry, that.myMaterial);
+                                that.figure.scale.set(40, 40, 40);
+                                that.scene.add(that.figure);
+                                });
+                
+                // Add the skybox
+                this.skyBoxGeometry = new THREE.CubeGeometry( 10000, 10000, 10000 );
+                this.skyBoxMaterial = new THREE.MeshBasicMaterial( { color: 0x9999ff, side: THREE.BackSide } );
+                this.skyBox = new THREE.Mesh( this.skyBoxGeometry, this.skyBoxMaterial );
+                this.scene.add(this.skyBox);
+                this.scene.fog = new THREE.FogExp2( 0x9999ff, 0.00025 );
+                
+                // Add the model to the scene
+                this.scene.add(this.dae);
                 
                 this.renderer = new THREE.WebGLRenderer({antialias: true});
                 this.renderer.setSize(800, 600);
                 this.renderer.setClearColor(0xeeeeee, 1.0);
                 document.body.appendChild(this.renderer.domElement);
+                
+                /*  Setup keyboard events  */
+                
+                this.keys = {};
+                $('body').keydown(function(e) {
+                                  console.log('keydown ' + e.which);
+                                  if (e.which) {
+                                  if (that.keys[e.which] !== 'triggered') {
+                                  that.keys[e.which] = true;
+                                  }
+                                  }
+                                  console.log(that.keys);
+                                  });
+                $('body').keyup(function(e) {
+                                console.log('keyup ' + e.which);
+                                if (e.which) {
+                                that.keys[e.which] = false;
+                                }
+                                console.log(that.keys);
+                                });
+            
                 
                 this.composer = new THREE.EffectComposer(this.renderer);
                 this.composer.addPass(new THREE.RenderPass(this.scene, this.camera));
@@ -235,6 +346,9 @@
                 effect.renderToScreen = true;
                 this.composer.addPass(effect);
             };
+            
+            
+            
             
             /**
              * Render game view for time t
@@ -252,6 +366,118 @@
                 this.composer.render();
             };
             
+            Game.prototype.handleInput = function() {
+                
+                /* Song selection buttons */
+                
+                if (this.keys[49]){
+                    // "The Modern Age" by the Strokes
+                    this.song = $('#song1')[0];
+                    this.songName = "The Modern Age";
+                    this.text3.innerHTML = "Song name: " + this.songName;
+                    this.song.play();
+                    this.beat = new Beat(146);
+                }
+                if (this.keys[50]){
+                    console.log("Helicopter");
+                    this.song = $('#song2')[0];
+                    this.songName = "Helicopter";
+                    this.text3.innerHTML = "Song name: " + this.songName;
+                    this.song.play();
+                    this.beat = new Beat(85);
+                }
+                if(this.keys[51]){
+                    console.log("Start Me Up");
+                    this.song = $('#song3')[0];
+                    this.songName = "Start Me Up";
+                    this.text3.innerHTML = "Song name: " + this.songName;
+                    this.song.play();
+                    this.beat = new Beat(122);
+                }
+                if(this.keys[52]){
+                    console.log("Take Me Out");
+                    this.song = $('#song4')[0];
+                    this.songName = "Take Me Out";
+                    this.text3.innerHTML = "Song name: " + this.songName;
+                    this.song.play();
+                    this.beat = new Beat(105);
+                }
+                if(this.keys[53]){
+                    console.log("I Bet You Look Good on the Dancefloor");
+                    this.song = $('#song5')[0];
+                    this.songName = "I Bet You Look Good on the Dancefloor";
+                    this.text3.innerHTML = "Song name: " + this.songName;
+                    this.song.play();
+                    this.beat = new Beat(103);
+                }
+                if(this.keys[27]){
+                    this.song.pause();
+                    console.log("Final score for " + this.songName + " is: " + this.score);
+                }
+                
+                if (this.keys[32] === true) {
+                    this.keys[32] = 'triggered';
+                    var pulse = this.speakerMaterial.uniforms['uBeat'].value;
+                    this.text2.innerHTML = "Score = " + this.score;
+                    this.text4.innerHTML = "Combo = " + this.combo;
+                    
+                    /* Score threshold*/
+                    
+                    // Marvelous!
+                    if (pulse >= 0.951 && pulse <= 0.9999999){
+                        this.combo += 1;
+                        this.score += 5;
+                        if (this.combo >= 5) {
+                            this.score += 10;
+                        }
+                        console.log("Marvelous!");
+                        console.log(this.score);
+                        console.log(this.combo);
+                    }
+                    // Perfect
+                    else if (pulse >= 0.901 && pulse <= 0.95) {
+                        this.combo += 1;
+                        this.score += 4;
+                        if (this.combo >= 5) {
+                            this.score += 8;
+                        }
+                        console.log("Perfect!");
+                        console.log(this.score);
+                        console.log(this.combo);
+                    }
+                    // Good
+                    else if (pulse >= 0.701 && pulse <= .90){
+                        this.combo += 1;
+                        this.score += 2;
+                        if (this.combo >= 5) {
+                            this.score += 4;
+                        }
+                        console.log("Good!");
+                        console.log(this.score);
+                        console.log(this.combo);
+                    }
+                    // O.K
+                    else if (pulse >= 0.601 && pulse <= .70){
+                        this.combo += 1;
+                        this.score += 1;
+                        if (this.combo >= 5) {
+                            this.score += 2;
+                        }
+                        console.log("O.K!");
+                        console.log(this.score);
+                        console.log(this.combo);
+                    }
+                    // MISS
+                    else if (pulse <= .60){
+                        this.combo = 0;
+                        this.score += 0;
+                        console.log("MISS");
+                        console.log(this.score);
+                        console.log(this.combo);
+                    }
+                }
+            }
+            
             /**
              * Start main game loop
              */
@@ -262,6 +488,8 @@
                     var time = new Date().getTime();
                     that.render((time - time0) * 0.001);
                     requestAnimationFrame(loop, that.renderer.domElement);
+                    // Respond to user input
+                    that.handleInput();
                 };
                 loop();  
             };
