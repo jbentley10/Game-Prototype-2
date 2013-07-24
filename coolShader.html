@@ -31,6 +31,28 @@
         <audio id='song5' src="sounds/ibylgotd.mp3"></audio>
         
         <!-----------All shader code goes here--------------->
+        <script id='plain-vertex-shader' type='x-shader/x-vertex'>
+            varying vec2 vUV;
+            
+            void main() {
+                vUV = uv;
+                gl_Position = projectionMatrix *
+                modelViewMatrix *
+                vec4(position, 1.0);
+            }
+            </script>
+        
+        <script id='plain-fragment-shader' type='x-shader/x-fragment'>
+            
+            varying vec2 vUV;
+            uniform sampler2D tTexture;
+            
+            void main() {
+                vec4 tColor = texture2D(tTexture, vUV);
+                gl_FragColor = vec4(tColor.rgb, 1.0);
+            }
+            </script>
+        
         <script id='my-vertex-shader' type='x-shader/x-vertex'>
             varying vec3 vNormal;
             uniform float uTime;
@@ -179,7 +201,7 @@
                 this.text2.style.height = 400;
                 this.text2.style.backgroundColor = "white";
                 this.text2.style.top = 380 + 'px';
-                this.text2.style.left = 375 + 'px';
+                this.text2.style.left = 275 + 'px';
                 document.body.appendChild(this.text2);
                 
                 // Display the song name
@@ -189,7 +211,7 @@
                 this.text3.style.height = 400;
                 this.text3.style.backgroundColor = "white";
                 this.text3.style.top = 335 + 'px';
-                this.text3.style.left = 375 + 'px';
+                this.text3.style.left = 275 + 'px';
                 document.body.appendChild(this.text3);
                 
                 // Display the combo count
@@ -199,8 +221,18 @@
                 this.text4.style.height = 400;
                 this.text4.style.backgroundColor = "white";
                 this.text4.style.top = 430 + 'px';
-                this.text4.style.left = 375 + 'px';
+                this.text4.style.left = 275 + 'px';
                 document.body.appendChild(this.text4);
+                
+                // Display the feedback from beat 
+                this.text5 = document.createElement('div');
+                this.text5.style.position = 'absolute';
+                this.text5.style.width = 400;
+                this.text5.style.height = 400;
+                this.text5.style.backgroundColor = "white";
+                this.text5.style.top = 380 + 'px';
+                this.text5.style.left = 375 + 'px';
+                document.body.appendChild(this.text5);
                 
                 this.camera = new THREE.PerspectiveCamera(75, 4.0/3.0, 1, 10000);
                 this.camera.position.y = -275;
@@ -211,6 +243,8 @@
                 var trippyVertexShaderText = $('#trippy-vertex-shader').text();
                 var trippyFragmentShaderText = $('#trippy-fragment-shader').text();
                 var blurFragmentShaderText = $('#blur-postprocess-fragment-shader').text();
+                var plainVertexShaderText = $('#plain-vertex-shader').text();
+                var plainFragmentShaderText = $('#plain-fragment-shader').text();
                 
                 /* 
                  * Add the Three.js objects seen in the game 
@@ -241,6 +275,7 @@
                 this.speaker2.position.y = -300;
                 this.scene.add(this.speaker2);
                 
+                // Initialize the material used for the poster
                 this.posterMaterial = new THREE.ShaderMaterial({
                                                            uniforms: {
                                                            'uTime': { type: 'f', value: 0.0 },
@@ -255,6 +290,14 @@
                 this.poster.position.z = -100;
                 this.scene.add(this.poster);
                 
+                this.floor = new THREE.Mesh(new THREE.PlaneGeometry(800, 600),
+                                            this.posterMaterial);
+                this.floor.position.y = -400;
+                this.floor.position.x = 0;
+                this.floor.rotation.x = 55;
+                this.scene.add(this.floor);
+                
+                // Initialize the material used for the spheres
                 this.sphereMaterial = new THREE.ShaderMaterial({
                                                                uniforms: {
                                                                'uTime': { type: 'f', value: 0.0 },
@@ -295,15 +338,36 @@
                 this.scene.add(this.sphere3);
                 this.scene.add(this.sphere4);
                 this.scene.add(this.sphere5);
-                
-                // Add the model human figure
+                      
+                // Add the model figure
                 this.figure = null;
                 var jsonLoader = new THREE.JSONLoader();
-                jsonLoader.load('figure.js', function(geometry) {
-                                that.figure = new THREE.Mesh(geometry, that.myMaterial);
-                                that.figure.scale.set(40, 40, 40);
+                
+                /* 
+                 * Snow texture taken from OpenGameArt
+                 * http://opengameart.org/content/snow-texture
+                 */
+                
+                var snowTexture = THREE.ImageUtils.loadTexture('textures/snow.png');
+                this.snowmanMaterial = new THREE.ShaderMaterial({
+                                                           uniforms: {
+                                                           'tTexture': { type: 't', value: snowTexture },
+                                                           },
+                                                           vertexShader: plainVertexShaderText,
+                                                           fragmentShader: plainFragmentShaderText
+                                                           });
+                
+                /* 
+                 * Model taken from OpenGameArt
+                 * http://opengameart.org/content/snowman
+                 */
+                
+                jsonLoader.load('models/snowman.js', function(geometry) {
+                                that.figure = new THREE.Mesh(geometry, that.snowmanMaterial);
+                                that.figure.scale.set(60, 60, 60);
                                 that.figure.position.x = 0;
-                                that.figure.position.y = -450;
+                                that.figure.position.y = -350;
+                                that.figure.rotation.y = 55;
                                 that.scene.add(that.figure);
                                 });
                 
@@ -371,6 +435,12 @@
                 this.sphere1.rotation.y += 0.007;
                 this.sphere2.rotation.x += 0.01;
                 this.sphere2.rotation.y += 0.007;
+                this.sphere3.rotation.x += 0.01;
+                this.sphere3.rotation.y += 0.007;
+                this.sphere4.rotation.x += 0.01;
+                this.sphere4.rotation.y += 0.007;
+                this.sphere5.rotation.x += 0.01;
+                this.sphere5.rotation.y += 0.007;
                 this.camera.lookAt(this.scene.position);
                 this.composer.render();
             };
@@ -423,7 +493,8 @@
                 }
                 if(this.keys[27]){
                     this.song.pause();
-                    console.log("Final score for " + this.songName + " is: " + this.score);
+                    this.beat = new Beat(0); 
+                    this.text5.innerHTML = "Final score for " + this.songName + " is: " + this.score;
                 }
                 
                 if (this.keys[32] === true) {
@@ -443,9 +514,7 @@
                         if (this.combo >= 5) {
                             this.score += 10;
                         }
-                        console.log("Marvelous!");
-                        console.log(this.score);
-                        console.log(this.combo);
+                        this.text5.innerHTML = "MARVELOUS!";
                     }
                     // Perfect
                     else if (pulse >= 0.901 && pulse <= 0.95) {
@@ -454,9 +523,7 @@
                         if (this.combo >= 5) {
                             this.score += 8;
                         }
-                        console.log("Perfect!");
-                        console.log(this.score);
-                        console.log(this.combo);
+                        this.text5.innerHTML = "PERFECT!";
                     }
                     // Good
                     else if (pulse >= 0.701 && pulse <= .90){
@@ -465,9 +532,7 @@
                         if (this.combo >= 5) {
                             this.score += 4;
                         }
-                        console.log("Good!");
-                        console.log(this.score);
-                        console.log(this.combo);
+                        this.text5.innerHTML = "GOOD!";
                     }
                     // O.K
                     else if (pulse >= 0.601 && pulse <= .70){
@@ -476,17 +541,13 @@
                         if (this.combo >= 5) {
                             this.score += 2;
                         }
-                        console.log("O.K!");
-                        console.log(this.score);
-                        console.log(this.combo);
+                        this.text5.innerHTML = "O.K!";
                     }
                     // MISS
                     else if (pulse <= .60){
                         this.combo = 0;
                         this.score += 0;
-                        console.log("MISS");
-                        console.log(this.score);
-                        console.log(this.combo);
+                        this.text5.innerHTML = "MISS";
                     }
                 }
             }
@@ -497,6 +558,7 @@
             Game.prototype.start = function() {
                 var that = this;
                 var time0 = new Date().getTime(); // milliseconds since 1970
+                this.beat = new Beat(0);
                 var loop = function() {
                     var time = new Date().getTime();
                     that.render((time - time0) * 0.001);
