@@ -13,8 +13,11 @@
         <script src="js/CopyShader.js"></script>
     </head>
     <body>
+        <!---------Load background--------------------------->
+        <body background="space.png" bgcolor="#333333">
         
         <!---------Display instructions---------------------->
+        <font color="white">   
         <p>Welcome to Thumper! </p>
         <p>Press a number to pick a song: </p>
         <p>1 - "The Modern Age" by the Strokes </p>
@@ -24,7 +27,8 @@
         <p>5 - "I Bet You Look Good on the Dancefloor" by Arctic Monkeys </p>
         <p> Chain together multiple hits to activate the combo multiplier! </p>
         <p> Press escape at any time to stop the song </p>
-        
+        </font>
+            
         <!----------Load audio files------------------------->
         <audio id='song1' src="sounds/themodernage.mp3"></audio>
         <audio id='song2' src="sounds/helicopter.mp3"></audio>
@@ -473,13 +477,6 @@
                                 that.figure.rotation.y = 55;
                                 that.scene.add(that.figure);
                                 });
-                
-                // Add the skybox
-                this.skyBoxGeometry = new THREE.CubeGeometry( 10000, 10000, 10000 );
-                this.skyBoxMaterial = new THREE.MeshBasicMaterial( { color: 0x9999ff, side: THREE.BackSide } );
-                this.skyBox = new THREE.Mesh( this.skyBoxGeometry, this.skyBoxMaterial );
-                this.scene.add(this.skyBox);
-                this.scene.fog = new THREE.FogExp2( 0x9999ff, 0.00025 );
                  
                 // Render the image
                 this.renderer = new THREE.WebGLRenderer({antialias: true});
