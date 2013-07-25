@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>Thumper</title>
+        <title>Rockin' Snowman in Space</title>
         <script src="js/jquery-1.8.3.min.js"></script>
         <script src="js/underscore-min.js"></script>
         <script src="js/three.min.js"></script>
@@ -12,13 +12,14 @@
         <script src="js/MaskPass.js"></script>
         <script src="js/CopyShader.js"></script>
     </head>
-    <body>
+    
         <!---------Load background--------------------------->
-        <body background="space.png" bgcolor="#333333">
+        <!---------from OpenGameArt: http://goo.gl/ZExsOG --->
+        <body background="space.png" bgcolor="#cccccc">
         
         <!---------Display instructions---------------------->
-        <font color="white">   
-        <p>Welcome to Thumper! </p>
+        <font color="white">
+        <p>Welcome to Rockin' Snowman in Space! </p>
         <p>Press a number to pick a song: </p>
         <p>1 - "The Modern Age" by the Strokes </p>
         <p>2 - "Helicopter" by Bloc Party </p>
@@ -26,7 +27,7 @@
         <p>4 - "Lose Yourself To Dance" by Daft Punk </p>
         <p>5 - "I Bet You Look Good on the Dancefloor" by Arctic Monkeys </p>
         <p> Chain together multiple hits to activate the combo multiplier! </p>
-        <p> Press escape at any time to stop the song </p>
+        <p> Press escape at any time to pause the game. </p>
         </font>
             
         <!----------Load audio files------------------------->
@@ -66,6 +67,7 @@
             uniform float uBeat;
             uniform float uPlayer;
             
+            // Warp the position of each vertex on the beat
             void main() {
                 vNormal = normalMatrix * vec3(normal);
                 gl_Position = projectionMatrix *
@@ -80,6 +82,7 @@
             uniform float uBeatTime;
             uniform float uBeat;
             
+            // Change the color of the object with the beat
             void main() {
                 vec3 light = vec3(1.0, 2.0, 1.0);
                 light = normalize(light);
@@ -97,6 +100,7 @@
             uniform float uBeat;
             uniform float uPlayer;
             
+            // Do not modify the position of vertices
             void main() {
                 vNormal = normalMatrix * vec3(normal);
                 gl_Position = projectionMatrix *
@@ -110,13 +114,15 @@
             uniform float uTime;
             uniform float uBeatTime;
             uniform float uBeat;
+            uniform float uPlayer;
             
+            // Change the color of the figure with the beat
             void main() {
                 vec3 light = vec3(1.0, 2.0, 1.0);
                 light = normalize(light);
                 vec3 nvNormal = normalize(vNormal);
                 float prod = max(0.0, dot(nvNormal, light));
-                float tval = abs(cos(uBeatTime * 3.14159));
+                float tval = abs(cos(uPlayer * 3.14159));
                 gl_FragColor = vec4(tval, prod, 1, 1);
             }
             </script>
@@ -140,6 +146,7 @@
             uniform float uTime;
             varying vec2 vUv;
             
+            // Set the shader to produce a swirly picture
             void main() {
                 float ang = atan(vUv.y, vUv.x);
                 float dist = length(vUv) * CURVE;
@@ -172,6 +179,8 @@
             uniform float uPlayer;
             varying vec2 vUv;
             
+            // Set up a grid of colors to respond to time
+            // and the player input
             void main() {
                 float time = uBeat;
                 float gridX = floor(vUv.x * 10.0) + 1.0;
@@ -180,6 +189,54 @@
                 gl_FragColor = vec4(sin((gridX*gridY)*uTime),(tan(gridX*gridY*17.0)*uPlayer),(cos(gridX*gridY)*uBeat),1.0);
             }
             </script>
+            
+            <script id='background-vertex-shader' type='x-shader/x-vertex'>
+                varying vec3 vNormal;
+                uniform float uTime;
+                uniform float uBeat;
+                varying vec2 vUv;
+                
+                void main() {
+                    vUv = uv;
+                    vNormal = normalMatrix * vec3(normal);
+                    gl_Position = projectionMatrix *
+                    modelViewMatrix *
+                    vec4(position, 1.0);
+                }
+                </script>
+            
+            <script id='background-fragment-shader' type='x-shader/x-fragment'>
+                varying vec3 vNormal;
+                uniform float uTime;
+                uniform float uBeat;
+                uniform float uPlayer;
+                uniform float uBeatTime;
+                uniform int uMiss;
+                varying vec2 vUv;
+                
+                // Set up a grid of colors to respond to time
+                // and the player input
+                void main() {
+                    float time = uBeat;
+                    float gridX = floor(vUv.x * 10.0) + 1.0;
+                    float gridY = floor(vUv.y * 10.0) + 1.0;
+                    
+                    // Make normal background when the player doesn't miss
+                    gl_FragColor = vec4(sin((gridX*gridY)*uTime),(tan(gridX*gridY*17.0)*uPlayer),(cos(gridX*gridY)*uBeat),1.0);
+                    
+                    // Make red static on miss
+                    if (uMiss == 1) {
+                            gl_FragColor = vec4(sin((gridX*gridY)*uTime),(acos(gridX*gridY*17.0)*uBeatTime),(tan(gridX*gridY)*uTime),1.0);
+                            gl_FragColor = vec4((atan((gridX*gridY)*uBeat)),(asin((gridX*gridY*17.0)*uBeat)),(asin((gridX*gridY)*uBeat)),1.0);
+                    }
+                    
+                    // Go back to original background when the player
+                    // stops missing 
+                    else if (uMiss == 0) {
+                        gl_FragColor = vec4(sin((gridX*gridY)*uTime),(tan(gridX*gridY*17.0)*uPlayer),(cos(gridX*gridY)*uBeat),1.0);          
+                    }
+                }
+                </script>
         
         <script id='my-postprocess-vertex-shader' type='x-shader/x-vertex'>
             varying vec2 vUv;
@@ -261,6 +318,7 @@
                 this.songName = 0;
                 this.beat = new Beat(145);
                 this.pulse = 0;
+                this.miss = 0;
                 
                 /* 
                  * Add text that updates 
@@ -292,8 +350,8 @@
                 this.text4.style.width = 400;
                 this.text4.style.height = 400;
                 this.text4.style.backgroundColor = "white";
-                this.text4.style.top = 450 + 'px';
-                this.text4.style.left = 275 + 'px';
+                this.text4.style.top = 400 + 'px';
+                this.text4.style.left = 375 + 'px';
                 document.body.appendChild(this.text4);
                 
                 // Display the feedback from beat 
@@ -303,7 +361,7 @@
                 this.text5.style.height = 400;
                 this.text5.style.backgroundColor = "white";
                 this.text5.style.top = 400 + 'px';
-                this.text5.style.left = 375 + 'px';
+                this.text5.style.left = 475 + 'px';
                 document.body.appendChild(this.text5);
                 
                 this.camera = new THREE.PerspectiveCamera(75, 4.0/3.0, 1, 10000);
@@ -321,6 +379,8 @@
                 var floorFragmentShaderText = $('#floor-fragment-shader').text();
                 var figureVertexShaderText = $('#figure-vertex-shader').text();
                 var figureFragmentShaderText = $('#figure-fragment-shader').text();
+                var backgroundVertexShaderText = $('#background-vertex-shader').text();
+                var backgroundFragmentShaderText = $('#background-fragment-shader').text();
                 
                 /* 
                  * Add the Three.js objects seen in the game 
@@ -338,18 +398,38 @@
                                                            });
                 this.scene = new THREE.Scene();
                 this.speaker1 = new THREE.Mesh(
-                                           new THREE.CubeGeometry(100, 200, 100),
+                                           new THREE.CubeGeometry(150, 300, 200),
                                            this.speakerMaterial);
                 this.speaker1.position.x = -300;
                 this.speaker1.position.y = -300;
                 this.scene.add(this.speaker1);
                 
                 this.speaker2 = new THREE.Mesh(
-                                               new THREE.CubeGeometry(100, 200, 100),
+                                               new THREE.CubeGeometry(150, 300, 200),
                                                this.speakerMaterial);
                 this.speaker2.position.x = 300;
                 this.speaker2.position.y = -300;
                 this.scene.add(this.speaker2);
+                
+                // Initialize the material used for the background
+                // that responds to player input
+                this.backgroundMaterial = new THREE.ShaderMaterial({
+                                                               uniforms: {
+                                                               'uTime': { type: 'f', value: 0.0 },
+                                                               'uPlayer': { type: 'f', value: 0.0 },
+                                                               'uBeat': { type: 'f', value: 0.0 },
+                                                               'uBeatTime': { type: 'f', value: 0.0 },
+                                                               'uMiss': { type: 'i', value: 0 }
+                                                               },
+                                                               vertexShader: backgroundVertexShaderText,
+                                                               fragmentShader: backgroundFragmentShaderText
+                                                               });
+                this.background = new THREE.Mesh(
+                                             new THREE.PlaneGeometry(3200, 3200),
+                                             this.backgroundMaterial);
+                this.background.position.y = -110;
+                this.background.position.z = -300;
+                this.scene.add(this.background);
                 
                 // Initialize the material used for the poster
                 this.posterMaterial = new THREE.ShaderMaterial({
@@ -434,16 +514,11 @@
                 this.scene.add(this.sphere[3]);
                 this.scene.add(this.sphere[4]);
                       
-                // Add the model figure
+                // Add loader for the model
                 this.figure = null;
                 var jsonLoader = new THREE.JSONLoader();
-
-                /* 
-                 * Snow texture taken from OpenGameArt
-                 * http://opengameart.org/content/snow-texture
-                 */
                 
-                var snowTexture = THREE.ImageUtils.loadTexture('textures/snow.png');
+                // Add material for the model
                 this.snowmanMaterial = new THREE.ShaderMaterial({
                                                            uniforms: {
                                                                 'uTime': { type: 'f', value: 0.0 },
@@ -514,6 +589,9 @@
 
             /**
              * Render game view for time t
+             *
+             * Set up uniform variables with each
+             * material type
              */
             Game.prototype.render = function(t) {
                 this.speakerMaterial.uniforms['uTime'].value = t;
@@ -525,6 +603,11 @@
                 this.floorMaterial.uniforms['uBeatTime'].value = this.beat.toBeatTime(t);
                 this.floorMaterial.uniforms['uBeat'].value = this.beat.toBeat(t);
                 this.floorMaterial.uniforms['uPlayer'].value = this.pulse;
+                this.backgroundMaterial.uniforms['uTime'].value = t;
+                this.backgroundMaterial.uniforms['uBeat'].value = this.beat.toBeat(t);
+                this.backgroundMaterial.uniforms['uPlayer'].value = this.pulse;
+                this.backgroundMaterial.uniforms['uBeatTime'].value = this.beat.toBeatTime(t);
+                this.backgroundMaterial.uniforms['uMiss'].value = this.miss;
                 this.snowmanMaterial.uniforms['uTime'].value = t;
                 this.snowmanMaterial.uniforms['uBeatTime'].value = this.beat.toBeatTime(t);
                 this.snowmanMaterial.uniforms['uBeat'].value = this.beat.toBeat(t);
@@ -540,7 +623,6 @@
                  */
                 
                 if (this.keys[49]){
-                    // "The Modern Age" by the Strokes
                     this.song = $('#song1')[0];
                     this.songName = "The Modern Age";
                     this.text3.innerHTML = "Song name: " + this.songName;
@@ -582,14 +664,13 @@
                 if(this.keys[27]){
                     this.song.pause();
                     this.beat = new Beat(0); 
-                    this.text5.innerHTML = "Final score for " + this.songName + " is: " + this.score;
+                    this.text5.innerHTML = "PAUSE";
                     this.score = 0;
                 }
                 
                 if (this.keys[32] === true) {
                     this.keys[32] = 'triggered';
                     this.pulse = this.speakerMaterial.uniforms['uBeat'].value;
-                    //this.pulse = uniforms['uPlayer'];
                     this.text2.innerHTML = "Score = " + this.score;
                     this.text4.innerHTML = "Combo = " + this.combo;
                     
@@ -603,50 +684,53 @@
                     if (this.pulse >= 0.951 && this.pulse <= 0.9999999){
                         this.combo += 1;
                         this.score += 5;
+                        this.miss = 0;
                         if (this.combo >= 5) {
                             this.score += 10;
                         }
                         this.text5.innerHTML = "MARVELOUS!";
+                        this.miss = this.backgroundMaterial.uniforms['uMiss'].value;
                     }
                     // Perfect
                     else if (this.pulse >= 0.901 && this.pulse <= 0.95) {
                         this.combo += 1;
                         this.score += 4;
+                        this.miss = 0;
                         if (this.combo >= 5) {
                             this.score += 8;
                         }
                         this.text5.innerHTML = "PERFECT!";
+                        this.miss = this.backgroundMaterial.uniforms['uMiss'].value;
                     }
                     // Good
                     else if (this.pulse >= 0.701 && this.pulse <= .90){
                         this.combo += 1;
                         this.score += 2;
+                        this.miss = 0;
                         if (this.combo >= 5) {
                             this.score += 4;
                         }
                         this.text5.innerHTML = "GOOD!";
+                        this.miss = this.backgroundMaterial.uniforms['uMiss'].value;
                     }
                     // O.K
                     else if (this.pulse >= 0.601 && this.pulse <= .70){
                         this.combo += 1;
                         this.score += 1;
+                        this.miss = 0;
                         if (this.combo >= 5) {
                             this.score += 2;
                         }
                         this.text5.innerHTML = "O.K!";
+                        this.miss = this.backgroundMaterial.uniforms['uMiss'].value;
                     }
                     // MISS
                     else if (this.pulse <= .60){
-                        missCount++;
-                        if(missCount === 5){
-                            console.log("Miss count reached");
-                            this.beat = new Beat(0);
-                            this.text5.innerHTML = "Final score for " + this.songName + " is: " + this.score;
-                        }
                         this.combo = 0;
                         this.score += 0;
+                        this.miss = 1;
                         this.text5.innerHTML = "MISS";
-                        this.scene.remove(this.sphere);
+                        this.miss = this.backgroundMaterial.uniforms['uMiss'].value;
                     }
                 }
             }
