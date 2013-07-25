@@ -169,25 +169,15 @@
             uniform float uTime;
             uniform float uBeatTime;
             uniform float uBeat;
+            uniform float uPlayer;
             varying vec2 vUv;
             
             void main() {
                 float time = uBeat;
-                float tileX = floor(vUv.x*10.0)+1.0;
-                float tileY = floor(vUv.y*10.0)+1.0;
-                if (uTime>=30.85&&uTime<86.0)
-                {
-                    gl_FragColor = vec4((sin((tileX*tileY)*uBeat)),(acos((tileX*tileY*17.0)*uBeat)),(tan((tileX*tileY)*uBeat)),1.0);
-                }
-                else if (uTime>=87.0&&uTime<150.8){
-                    gl_FragColor = vec4(sin((tileX*tileY)*uTime),(acos(tileX*tileY*17.0)*uBeatTime),(tan(tileX*tileY)*uTime),1.0);
-                }
-                else if (uTime>=150.8&&uTime<221.5){
-                    gl_FragColor = vec4((sin((tileX*tileY)*uBeat)),(acos((tileX*tileY*17.0)*uBeat)),(tan((tileX*tileY)*uBeat)),1.0);
-                }
-                else{
-                    gl_FragColor = vec4(sin((tileX*tileY)*uTime),(acos(tileX*tileY*17.0)*uBeatTime),(tan(tileX*tileY)*uTime),1.0);
-                }
+                float gridX = floor(vUv.x * 10.0) + 1.0;
+                float gridY = floor(vUv.y * 10.0) + 1.0;
+
+                gl_FragColor = vec4(sin((gridX*gridY)*uTime),(tan(gridX*gridY*17.0)*uPlayer),(cos(gridX*gridY)*uBeat),1.0);
             }
             </script>
         
@@ -370,7 +360,7 @@
                                                            fragmentShader: trippyFragmentShaderText
                                                            });
                 this.poster = new THREE.Mesh(
-                                             new THREE.PlaneGeometry(800, 800),
+                                             new THREE.PlaneGeometry(1000, 1000),
                                              this.posterMaterial);
                 this.poster.position.y = -110;
                 this.poster.position.z = -100;
@@ -381,12 +371,13 @@
                                                                uniforms: {
                                                                'uTime': { type: 'f', value: 0.0 },
                                                                'uBeatTime': { type: 'f', value: 0.0 },
-                                                               'uBeat': { type: 'f', value: 0.0 }
+                                                               'uBeat': { type: 'f', value: 0.0 },
+                                                               'uPlayer': { type: 'f', value: 0.0 }
                                                                },
                                                                vertexShader: floorVertexShaderText,
                                                                fragmentShader: floorFragmentShaderText
                                                                });
-                this.floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 800),
+                this.floor = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1000),
                                             this.floorMaterial);
                 this.floor.position.y = -400;
                 this.floor.position.x = 0;
@@ -416,27 +407,27 @@
                                            new THREE.SphereGeometry(100, 6, 6),
                                            this.speakerMaterial);
                 this.sphere[0].position.x = 400;
-                this.sphere[0].position.y = 250;
+                this.sphere[0].position.y = 450;
                 this.sphere[1] = new THREE.Mesh(
                                             new THREE.SphereGeometry(100, 6, 6),
                                             this.speakerMaterial);
                 this.sphere[1].position.x = 200;
-                this.sphere[1].position.y = 250;
+                this.sphere[1].position.y = 450;
                 this.sphere[2] = new THREE.Mesh(
                                               new THREE.SphereGeometry(100, 6, 6),
                                               this.speakerMaterial);
                 this.sphere[2].position.x = 0;
-                this.sphere[2].position.y = 250;
+                this.sphere[2].position.y = 450;
                 this.sphere[3] = new THREE.Mesh(
                                               new THREE.SphereGeometry(100, 6, 6),
                                               this.speakerMaterial);
                 this.sphere[3].position.x = -200;
-                this.sphere[3].position.y = 250;
+                this.sphere[3].position.y = 450;
                 this.sphere[4] = new THREE.Mesh(
                                               new THREE.SphereGeometry(100, 6, 6),
                                               this.speakerMaterial);
                 this.sphere[4].position.x = -400;
-                this.sphere[4].position.y = 250;
+                this.sphere[4].position.y = 450;
                 this.scene.add(this.sphere[0]);
                 this.scene.add(this.sphere[1]);
                 this.scene.add(this.sphere[2]);
@@ -533,6 +524,7 @@
                 this.floorMaterial.uniforms['uTime'].value = t;
                 this.floorMaterial.uniforms['uBeatTime'].value = this.beat.toBeatTime(t);
                 this.floorMaterial.uniforms['uBeat'].value = this.beat.toBeat(t);
+                this.floorMaterial.uniforms['uPlayer'].value = this.pulse;
                 this.snowmanMaterial.uniforms['uTime'].value = t;
                 this.snowmanMaterial.uniforms['uBeatTime'].value = this.beat.toBeatTime(t);
                 this.snowmanMaterial.uniforms['uBeat'].value = this.beat.toBeat(t);
