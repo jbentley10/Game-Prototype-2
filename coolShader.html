@@ -14,12 +14,13 @@
     </head>
     <body>
         
+        <!---------Display instructions---------------------->
         <p>Welcome to Thumper! </p>
         <p>Press a number to pick a song: </p>
         <p>1 - "The Modern Age" by the Strokes </p>
         <p>2 - "Helicopter" by Bloc Party </p>
         <p>3 - "Start Me Up" by the Rolling Stones </p>
-        <p>4 - "Take Me Out" by Franz Ferdinand </p>
+        <p>4 - "Lose Yourself To Dance" by Daft Punk </p>
         <p>5 - "I Bet You Look Good on the Dancefloor" by Arctic Monkeys </p>
         <p> Chain together multiple hits to activate the combo multiplier! </p>
         <p> Press escape at any time to stop the song </p>
@@ -28,7 +29,7 @@
         <audio id='song1' src="sounds/themodernage.mp3"></audio>
         <audio id='song2' src="sounds/helicopter.mp3"></audio>
         <audio id='song3' src="sounds/startmeup.mp3"></audio>
-        <audio id='song4' src="sounds/takemeout.mp3"></audio>
+        <audio id='song4' src="sounds/loseyourselftodance.mp3"></audio>
         <audio id='song5' src="sounds/ibylgotd.mp3"></audio>
         
         <!-----------All shader code goes here--------------->
@@ -222,20 +223,6 @@
             </script>
         <script>
             
-            /* 
-             * Function to load external shader files 
-             */
-            var loadFile = function(url) {
-                var result = null;
-                $.ajax({
-                       url: url,
-                       async: false
-                       }).done(function(data) {
-                               result = data;
-                               });
-                return result;
-            };
-            
             /**
              * Beat object
              * Helps convert between seconds and beats
@@ -379,7 +366,7 @@
                                                            fragmentShader: trippyFragmentShaderText
                                                            });
                 this.poster = new THREE.Mesh(
-                                             new THREE.PlaneGeometry(600, 600),
+                                             new THREE.PlaneGeometry(800, 800),
                                              this.posterMaterial);
                 this.poster.position.y = -110;
                 this.poster.position.z = -100;
@@ -455,14 +442,7 @@
                 // Add the model figure
                 this.figure = null;
                 var jsonLoader = new THREE.JSONLoader();
-                
-                /* 
-                 * Floor texture from OpenGameArt
-                 * http://opengameart.org/sites/default/files/floor_01_1.png
-                 */
-                
-                //var floorTexture = THREE.ImageUtils.loadTexture('textures/floor.png');
-                
+
                 /* 
                  * Snow texture taken from OpenGameArt
                  * http://opengameart.org/content/snow-texture
@@ -533,6 +513,7 @@
                 this.composer = new THREE.EffectComposer(this.renderer);
                 this.composer.addPass(new THREE.RenderPass(this.scene, this.camera));
                 
+                // Add postprocessing effects
                 var MyEffectShader = {
                     uniforms: { 'tDiffuse': { type: 't', value: null }},
                     vertexShader: $('#my-postprocess-vertex-shader').text(),
@@ -594,12 +575,12 @@
                     this.beat = new Beat(122);
                 }
                 if(this.keys[52]){
-                    console.log("Take Me Out");
+                    console.log("Lose Yourself To Dance");
                     this.song = $('#song4')[0];
-                    this.songName = "Take Me Out";
+                    this.songName = "Lose Yourself To Dance";
                     this.text3.innerHTML = "Song name: " + this.songName;
                     this.song.play();
-                    this.beat = new Beat(105);
+                    this.beat = new Beat(100);
                 }
                 if(this.keys[53]){
                     console.log("I Bet You Look Good on the Dancefloor");
@@ -613,6 +594,7 @@
                     this.song.pause();
                     this.beat = new Beat(0); 
                     this.text5.innerHTML = "Final score for " + this.songName + " is: " + this.score;
+                    this.score = 0;
                 }
                 
                 if (this.keys[32] === true) {
