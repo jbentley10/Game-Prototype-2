@@ -24,6 +24,7 @@
         <p> Chain together multiple hits to activate the combo multiplier! </p>
         <p> Press escape at any time to stop the song </p>
         
+        <!----------Load audio files------------------------->
         <audio id='song1' src="sounds/themodernage.mp3"></audio>
         <audio id='song2' src="sounds/helicopter.mp3"></audio>
         <audio id='song3' src="sounds/startmeup.mp3"></audio>
@@ -58,6 +59,7 @@
             uniform float uTime;
             uniform float uBeatTime;
             uniform float uBeat;
+            uniform float uPlayer;
             
             void main() {
                 vNormal = normalMatrix * vec3(normal);
@@ -110,6 +112,49 @@
             }
             </script>
         
+        <script id='floor-vertex-shader' type='x-shader/x-vertex'>
+            varying vec3 vNormal;
+            uniform float uTime;
+            uniform float uBeatTime;
+            uniform float uBeat;
+            varying vec2 vUv;
+            
+            void main() {
+                vUv = uv;
+                vNormal = normalMatrix * vec3(normal);
+                gl_Position = projectionMatrix *
+                modelViewMatrix *
+                vec4(position, 1.0);
+            }
+            </script>
+        
+        <script id='floor-fragment-shader' type='x-shader/x-fragment'>
+            varying vec3 vNormal;
+            uniform float uTime;
+            uniform float uBeatTime;
+            uniform float uBeat;
+            varying vec2 vUv;
+            
+            void main() {
+                float time = uBeat;
+                float tileX = floor(vUv.x*10.0)+1.0;
+                float tileY = floor(vUv.y*10.0)+1.0;
+                if (uTime>=30.85&&uTime<86.0)
+                {
+                    gl_FragColor = vec4((sin((tileX*tileY)*uBeat)),(acos((tileX*tileY*17.0)*uBeat)),(tan((tileX*tileY)*uBeat)),1.0);
+                }
+                else if (uTime>=87.0&&uTime<150.8){
+                    gl_FragColor = vec4(sin((tileX*tileY)*uTime),(acos(tileX*tileY*17.0)*uBeatTime),(tan(tileX*tileY)*uTime),1.0);
+                }
+                else if (uTime>=150.8&&uTime<221.5){
+                    gl_FragColor = vec4((sin((tileX*tileY)*uBeat)),(acos((tileX*tileY*17.0)*uBeat)),(tan((tileX*tileY)*uBeat)),1.0);
+                }
+                else{
+                    gl_FragColor = vec4(sin((tileX*tileY)*uTime),(acos(tileX*tileY*17.0)*uBeatTime),(tan(tileX*tileY)*uTime),1.0);
+                }
+            }
+            </script>
+        
         <script id='my-postprocess-vertex-shader' type='x-shader/x-vertex'>
             varying vec2 vUv;
             
@@ -145,6 +190,20 @@
             }
             </script>
         <script>
+            
+            /* 
+             * Function to load external shader files 
+             */
+            var loadFile = function(url) {
+                var result = null;
+                $.ajax({
+                       url: url,
+                       async: false
+                       }).done(function(data) {
+                               result = data;
+                               });
+                return result;
+            };
             
             /**
              * Beat object
@@ -189,6 +248,7 @@
                 this.combo = 0;
                 this.songName = 0;
                 this.beat = new Beat(145);
+                this.pulse = 0;
                 
                 /* 
                  * Add text that updates 
@@ -236,7 +296,7 @@
                 
                 this.camera = new THREE.PerspectiveCamera(75, 4.0/3.0, 1, 10000);
                 this.camera.position.y = -275;
-                this.camera.position.z = 600;
+                this.camera.position.z = 700;
                 
                 var vertexShaderText = $('#my-vertex-shader').text();
                 var fragmentShaderText = $('#my-fragment-shader').text();
@@ -245,6 +305,8 @@
                 var blurFragmentShaderText = $('#blur-postprocess-fragment-shader').text();
                 var plainVertexShaderText = $('#plain-vertex-shader').text();
                 var plainFragmentShaderText = $('#plain-fragment-shader').text();
+                var floorVertexShaderText = $('#floor-vertex-shader').text();
+                var floorFragmentShaderText = $('#floor-fragment-shader').text();
                 
                 /* 
                  * Add the Three.js objects seen in the game 
@@ -290,8 +352,18 @@
                 this.poster.position.z = -100;
                 this.scene.add(this.poster);
                 
-                this.floor = new THREE.Mesh(new THREE.PlaneGeometry(800, 600),
-                                            this.posterMaterial);
+                // Initialize the material used for the floor
+                this.floorMaterial = new THREE.ShaderMaterial({
+                                                               uniforms: {
+                                                               'uTime': { type: 'f', value: 0.0 },
+                                                               'uBeatTime': { type: 'f', value: 0.0 },
+                                                               'uBeat': { type: 'f', value: 0.0 }
+                                                               },
+                                                               vertexShader: floorVertexShaderText,
+                                                               fragmentShader: floorFragmentShaderText
+                                                               });
+                this.floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 800),
+                                            this.floorMaterial);
                 this.floor.position.y = -400;
                 this.floor.position.x = 0;
                 this.floor.rotation.x = 55;
@@ -302,46 +374,61 @@
                                                                uniforms: {
                                                                'uTime': { type: 'f', value: 0.0 },
                                                                'uBeatTime': { type: 'f', value: 0.0 },
-                                                               'uBeat': { type: 'f', value: 0.0 }
+                                                               'uBeat': { type: 'f', value: 0.0 },
+                                                               'uPlayer': { type: 'f', value: 0.0 }
                                                                },
                                                                vertexShader: vertexShaderText,
                                                                fragmentShader: blurFragmentShaderText
                                                                });
                 
-                this.sphere1 = new THREE.Mesh(
+                /*
+                 * Add the spheres to the scene, which
+                 * will serves as lives in the game
+                 */
+                this.sphere = new Array();
+                this.sphere.length = 5;
+                
+                this.sphere[0] = new THREE.Mesh(
                                            new THREE.SphereGeometry(100, 6, 6),
                                            this.speakerMaterial);
-                this.sphere1.position.x = 400;
-                this.sphere1.position.y = 250;
-                this.sphere2 = new THREE.Mesh(
+                this.sphere[0].position.x = 400;
+                this.sphere[0].position.y = 250;
+                this.sphere[1] = new THREE.Mesh(
                                             new THREE.SphereGeometry(100, 6, 6),
                                             this.speakerMaterial);
-                this.sphere2.position.x = 200;
-                this.sphere2.position.y = 250;
-                this.sphere3 = new THREE.Mesh(
+                this.sphere[1].position.x = 200;
+                this.sphere[1].position.y = 250;
+                this.sphere[2] = new THREE.Mesh(
                                               new THREE.SphereGeometry(100, 6, 6),
                                               this.speakerMaterial);
-                this.sphere3.position.x = 0;
-                this.sphere3.position.y = 250;
-                this.sphere4 = new THREE.Mesh(
+                this.sphere[2].position.x = 0;
+                this.sphere[2].position.y = 250;
+                this.sphere[3] = new THREE.Mesh(
                                               new THREE.SphereGeometry(100, 6, 6),
                                               this.speakerMaterial);
-                this.sphere4.position.x = -200;
-                this.sphere4.position.y = 250;
-                this.sphere5 = new THREE.Mesh(
+                this.sphere[3].position.x = -200;
+                this.sphere[3].position.y = 250;
+                this.sphere[4] = new THREE.Mesh(
                                               new THREE.SphereGeometry(100, 6, 6),
                                               this.speakerMaterial);
-                this.sphere5.position.x = -400;
-                this.sphere5.position.y = 250;
-                this.scene.add(this.sphere1);
-                this.scene.add(this.sphere2);
-                this.scene.add(this.sphere3);
-                this.scene.add(this.sphere4);
-                this.scene.add(this.sphere5);
+                this.sphere[4].position.x = -400;
+                this.sphere[4].position.y = 250;
+                this.scene.add(this.sphere[0]);
+                this.scene.add(this.sphere[1]);
+                this.scene.add(this.sphere[2]);
+                this.scene.add(this.sphere[3]);
+                this.scene.add(this.sphere[4]);
                       
                 // Add the model figure
                 this.figure = null;
                 var jsonLoader = new THREE.JSONLoader();
+                
+                /* 
+                 * Floor texture from OpenGameArt
+                 * http://opengameart.org/sites/default/files/floor_01_1.png
+                 */
+                
+                //var floorTexture = THREE.ImageUtils.loadTexture('textures/floor.png');
                 
                 /* 
                  * Snow texture taken from OpenGameArt
@@ -377,7 +464,7 @@
                 this.skyBox = new THREE.Mesh( this.skyBoxGeometry, this.skyBoxMaterial );
                 this.scene.add(this.skyBox);
                 this.scene.fog = new THREE.FogExp2( 0x9999ff, 0.00025 );
-                
+                 
                 // Render the image
                 this.renderer = new THREE.WebGLRenderer({antialias: true});
                 this.renderer.setSize(800, 600);
@@ -419,10 +506,7 @@
                 effect.renderToScreen = true;
                 this.composer.addPass(effect);
             };
-            
-            
-            
-            
+
             /**
              * Render game view for time t
              */
@@ -430,17 +514,12 @@
                 this.speakerMaterial.uniforms['uTime'].value = t;
                 this.speakerMaterial.uniforms['uBeatTime'].value = this.beat.toBeatTime(t);
                 this.speakerMaterial.uniforms['uBeat'].value = this.beat.toBeat(t);
+                this.sphereMaterial.uniforms['uPlayer'].value = this.beat.toBeat(t);
                 this.posterMaterial.uniforms['uTime'].value = t;
-                this.sphere1.rotation.x += 0.01;
-                this.sphere1.rotation.y += 0.007;
-                this.sphere2.rotation.x += 0.01;
-                this.sphere2.rotation.y += 0.007;
-                this.sphere3.rotation.x += 0.01;
-                this.sphere3.rotation.y += 0.007;
-                this.sphere4.rotation.x += 0.01;
-                this.sphere4.rotation.y += 0.007;
-                this.sphere5.rotation.x += 0.01;
-                this.sphere5.rotation.y += 0.007;
+                this.floorMaterial.uniforms['uTime'].value = t;
+                this.floorMaterial.uniforms['uBeatTime'].value = this.beat.toBeatTime(t);
+                this.floorMaterial.uniforms['uBeat'].value = this.beat.toBeat(t);
+                 
                 this.camera.lookAt(this.scene.position);
                 this.composer.render();
             };
@@ -499,7 +578,8 @@
                 
                 if (this.keys[32] === true) {
                     this.keys[32] = 'triggered';
-                    var pulse = this.speakerMaterial.uniforms['uBeat'].value;
+                    this.pulse = this.speakerMaterial.uniforms['uBeat'].value;
+                    //this.pulse = uniforms['uPlayer'];
                     this.text2.innerHTML = "Score = " + this.score;
                     this.text4.innerHTML = "Combo = " + this.combo;
                     
@@ -507,8 +587,10 @@
                      * Score threshold
                      */
                     
+                    var missCount = 0;
+                    
                     // Marvelous!
-                    if (pulse >= 0.951 && pulse <= 0.9999999){
+                    if (this.pulse >= 0.951 && this.pulse <= 0.9999999){
                         this.combo += 1;
                         this.score += 5;
                         if (this.combo >= 5) {
@@ -517,7 +599,7 @@
                         this.text5.innerHTML = "MARVELOUS!";
                     }
                     // Perfect
-                    else if (pulse >= 0.901 && pulse <= 0.95) {
+                    else if (this.pulse >= 0.901 && this.pulse <= 0.95) {
                         this.combo += 1;
                         this.score += 4;
                         if (this.combo >= 5) {
@@ -526,7 +608,7 @@
                         this.text5.innerHTML = "PERFECT!";
                     }
                     // Good
-                    else if (pulse >= 0.701 && pulse <= .90){
+                    else if (this.pulse >= 0.701 && this.pulse <= .90){
                         this.combo += 1;
                         this.score += 2;
                         if (this.combo >= 5) {
@@ -535,7 +617,7 @@
                         this.text5.innerHTML = "GOOD!";
                     }
                     // O.K
-                    else if (pulse >= 0.601 && pulse <= .70){
+                    else if (this.pulse >= 0.601 && this.pulse <= .70){
                         this.combo += 1;
                         this.score += 1;
                         if (this.combo >= 5) {
@@ -544,10 +626,17 @@
                         this.text5.innerHTML = "O.K!";
                     }
                     // MISS
-                    else if (pulse <= .60){
+                    else if (this.pulse <= .60){
+                        missCount++;
+                        if(missCount === 5){
+                            console.log("Miss count reached");
+                            this.beat = new Beat(0);
+                            this.text5.innerHTML = "Final score for " + this.songName + " is: " + this.score;
+                        }
                         this.combo = 0;
                         this.score += 0;
                         this.text5.innerHTML = "MISS";
+                        this.scene.remove(this.sphere);
                     }
                 }
             }
