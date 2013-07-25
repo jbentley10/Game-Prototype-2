@@ -85,6 +85,37 @@
             }
             </script>
         
+        <script id='figure-vertex-shader' type='x-shader/x-vertex'>
+            varying vec3 vNormal;
+            uniform float uTime;
+            uniform float uBeatTime;
+            uniform float uBeat;
+            uniform float uPlayer;
+            
+            void main() {
+                vNormal = normalMatrix * vec3(normal);
+                gl_Position = projectionMatrix *
+                modelViewMatrix *
+                vec4((0.8 + 0.2) * position, 1.0);
+            }
+            </script>
+        
+        <script id='figure-fragment-shader' type='x-shader/x-fragment'>
+            varying vec3 vNormal;
+            uniform float uTime;
+            uniform float uBeatTime;
+            uniform float uBeat;
+            
+            void main() {
+                vec3 light = vec3(1.0, 2.0, 1.0);
+                light = normalize(light);
+                vec3 nvNormal = normalize(vNormal);
+                float prod = max(0.0, dot(nvNormal, light));
+                float tval = abs(cos(uBeatTime * 3.14159));
+                gl_FragColor = vec4(tval, prod, 1, 1);
+            }
+            </script>
+        
         <script id='trippy-vertex-shader' type='x-shader/x-vertex'>
             varying vec2 vUv;
             
@@ -260,7 +291,7 @@
                 this.text2.style.width = 400;
                 this.text2.style.height = 400;
                 this.text2.style.backgroundColor = "white";
-                this.text2.style.top = 380 + 'px';
+                this.text2.style.top = 400 + 'px';
                 this.text2.style.left = 275 + 'px';
                 document.body.appendChild(this.text2);
                 
@@ -270,7 +301,7 @@
                 this.text3.style.width = 400;
                 this.text3.style.height = 400;
                 this.text3.style.backgroundColor = "white";
-                this.text3.style.top = 335 + 'px';
+                this.text3.style.top = 355 + 'px';
                 this.text3.style.left = 275 + 'px';
                 document.body.appendChild(this.text3);
                 
@@ -280,7 +311,7 @@
                 this.text4.style.width = 400;
                 this.text4.style.height = 400;
                 this.text4.style.backgroundColor = "white";
-                this.text4.style.top = 430 + 'px';
+                this.text4.style.top = 450 + 'px';
                 this.text4.style.left = 275 + 'px';
                 document.body.appendChild(this.text4);
                 
@@ -290,13 +321,13 @@
                 this.text5.style.width = 400;
                 this.text5.style.height = 400;
                 this.text5.style.backgroundColor = "white";
-                this.text5.style.top = 380 + 'px';
+                this.text5.style.top = 400 + 'px';
                 this.text5.style.left = 375 + 'px';
                 document.body.appendChild(this.text5);
                 
                 this.camera = new THREE.PerspectiveCamera(75, 4.0/3.0, 1, 10000);
                 this.camera.position.y = -275;
-                this.camera.position.z = 700;
+                this.camera.position.z = 800;
                 
                 var vertexShaderText = $('#my-vertex-shader').text();
                 var fragmentShaderText = $('#my-fragment-shader').text();
@@ -307,6 +338,8 @@
                 var plainFragmentShaderText = $('#plain-fragment-shader').text();
                 var floorVertexShaderText = $('#floor-vertex-shader').text();
                 var floorFragmentShaderText = $('#floor-fragment-shader').text();
+                var figureVertexShaderText = $('#figure-vertex-shader').text();
+                var figureFragmentShaderText = $('#figure-fragment-shader').text();
                 
                 /* 
                  * Add the Three.js objects seen in the game 
@@ -438,10 +471,13 @@
                 var snowTexture = THREE.ImageUtils.loadTexture('textures/snow.png');
                 this.snowmanMaterial = new THREE.ShaderMaterial({
                                                            uniforms: {
-                                                           'tTexture': { type: 't', value: snowTexture },
+                                                                'uTime': { type: 'f', value: 0.0 },
+                                                                'uBeatTime': { type: 'f', value: 0.0 },
+                                                                'uBeat': { type: 'f', value: 0.0 },
+                                                                'uPlayer': { type: 'f', value: 0.0 }
                                                            },
-                                                           vertexShader: plainVertexShaderText,
-                                                           fragmentShader: plainFragmentShaderText
+                                                           vertexShader: figureVertexShaderText,
+                                                           fragmentShader: figureFragmentShaderText
                                                            });
                 
                 /* 
@@ -519,6 +555,9 @@
                 this.floorMaterial.uniforms['uTime'].value = t;
                 this.floorMaterial.uniforms['uBeatTime'].value = this.beat.toBeatTime(t);
                 this.floorMaterial.uniforms['uBeat'].value = this.beat.toBeat(t);
+                this.snowmanMaterial.uniforms['uTime'].value = t;
+                this.snowmanMaterial.uniforms['uBeatTime'].value = this.beat.toBeatTime(t);
+                this.snowmanMaterial.uniforms['uBeat'].value = this.beat.toBeat(t);
                  
                 this.camera.lookAt(this.scene.position);
                 this.composer.render();
